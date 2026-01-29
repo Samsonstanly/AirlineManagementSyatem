@@ -1,0 +1,222 @@
+CREATE DATABASE AirlineDB;
+USE AirlineDB;
+
+CREATE TABLE Admin(
+AdminId INT PRIMARY KEY IDENTITY(1,1) ,
+UserName VARCHAR(30) UNIQUE NOT NULL,
+Password VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Country(
+CountryId INT PRIMARY KEY IDENTITY(1,1),
+CountryName VARCHAR(50) UNIQUE NOT NULL
+);
+
+
+CREATE TABLE City(
+CityId INT PRIMARY KEY IDENTITY(1,1),
+CityName VARCHAR(50) UNIQUE NOT NULL,
+CountryId INT 
+		FOREIGN KEY REFERENCES Country(CountryId)
+		);
+
+CREATE TABLE Airport(
+AirportId INT PRIMARY KEY IDENTITY(1,1),
+AirportName VARCHAR(50) NOT NULL,
+CityId INT 
+		FOREIGN KEY REFERENCES City(CityId)
+		);
+
+CREATE TABLE FlightDetails(
+FlightDetailsId INT PRIMARY KEY IDENTITY(1,1),
+FlightName VARCHAR(50)
+);
+
+
+CREATE TABLE FlightItatory(
+FlightId INT PRIMARY KEY IDENTITY(1,1),
+FlightDetailsId INT 
+		FOREIGN KEY REFERENCES FlightDetails(FlightDetailsId),
+DepartureAirport INT
+		FOREIGN KEY REFERENCES Airport(AirportId),
+DepartureDate DATE,
+DepartureTime Time,
+ArrivedAirport INT
+		FOREIGN KEY REFERENCES Airport(AirportId),
+ArrivedDate Date,
+ArrivedTime Time
+);
+
+CREATE PROCEDURE sp_ListAllFlights
+AS
+BEGIN
+    SELECT 
+        fi.FlightId,
+        fd.FlightName,
+        da.AirportName AS DepartureAirport,
+        dc.CityName AS DepartureCity,
+        fi.DepartureDate,
+        fi.DepartureTime,
+        aa.AirportName AS ArrivalAirport,
+        ac.CityName AS ArrivalCity,
+        fi.ArrivedDate,
+        fi.ArrivedTime
+    FROM FlightItatory fi
+    JOIN FlightDetails fd ON fi.FlightDetailsId = fd.FlightDetailsId
+    JOIN Airport da ON fi.DepartureAirport = da.AirportId
+    JOIN City dc ON da.CityId = dc.CityId
+    JOIN Airport aa ON fi.ArrivedAirport = aa.AirportId
+    JOIN City ac ON aa.CityId = ac.CityId;
+END;
+
+
+CREATE PROCEDURE sp_SearchFlightById
+    @FlightId INT
+AS
+BEGIN
+    SELECT 
+        fi.FlightId,
+        fd.FlightName,
+        da.AirportName AS DepartureAirport,
+        fi.DepartureDate,
+        fi.DepartureTime,
+        aa.AirportName AS ArrivalAirport,
+        fi.ArrivedDate,
+        fi.ArrivedTime
+    FROM FlightItatory fi
+    JOIN FlightDetails fd ON fi.FlightDetailsId = fd.FlightDetailsId
+    JOIN Airport da ON fi.DepartureAirport = da.AirportId
+    JOIN Airport aa ON fi.ArrivedAirport = aa.AirportId
+    WHERE fi.FlightId = @FlightId;
+END;
+
+CREATE PROCEDURE sp_AddFlight
+    @FlightDetailsId INT,
+    @DepartureAirport INT,
+    @DepartureDate DATE,
+    @DepartureTime TIME,
+    @ArrivedAirport INT,
+    @ArrivedDate DATE,
+    @ArrivedTime TIME
+AS
+BEGIN
+    INSERT INTO FlightItatory
+    (
+        FlightDetailsId,
+        DepartureAirport,
+        DepartureDate,
+        DepartureTime,
+        ArrivedAirport,
+        ArrivedDate,
+        ArrivedTime
+    )
+    VALUES
+    (
+        @FlightDetailsId,
+        @DepartureAirport,
+        @DepartureDate,
+        @DepartureTime,
+        @ArrivedAirport,
+        @ArrivedDate,
+        @ArrivedTime
+    );
+END;
+
+
+CREATE PROCEDURE sp_UpdateFlight
+    @FlightId INT,
+    @FlightDetailsId INT,
+    @DepartureAirport INT,
+    @DepartureDate DATE,
+    @DepartureTime TIME,
+    @ArrivedAirport INT,
+    @ArrivedDate DATE,
+    @ArrivedTime TIME
+AS
+BEGIN
+    UPDATE FlightItatory
+    SET
+        FlightDetailsId = @FlightDetailsId,
+        DepartureAirport = @DepartureAirport,
+        DepartureDate = @DepartureDate,
+        DepartureTime = @DepartureTime,
+        ArrivedAirport = @ArrivedAirport,
+        ArrivedDate = @ArrivedDate,
+        ArrivedTime = @ArrivedTime
+    WHERE FlightId = @FlightId;
+END;
+
+
+EXEC sp_ListAllFlights;
+
+EXEC sp_SearchFlightById @FlightId = 1;
+
+	INSERT INTO Admin (UserName, Password)
+VALUES 
+('admin', 'admin123'),
+('superadmin', 'super123');
+
+
+INSERT INTO Country (CountryName)
+VALUES 
+('India'),
+('England');
+
+INSERT INTO City (CityName, CountryId)
+VALUES
+('Delhi', 1),
+('Mumbai', 1),
+('London', 2);
+
+
+INSERT INTO Airport (AirportName, CityId)
+VALUES
+('Indira Gandhi International Airport', 1),  
+('Chhatrapati Shivaji Airport', 2),           
+('Heathrow Airport', 3);                      
+
+
+
+INSERT INTO FlightDetails (FlightName)
+VALUES
+--('Qatar Airways '),
+('Air India');
+
+EXEC sp_AddFlight 
+    @FlightDetailsId = 1,
+    @DepartureAirport = 1,   -- Delhi
+    @DepartureDate = '2026-02-01',
+    @DepartureTime = '10:30',
+    @ArrivedAirport = 3,     -- London
+    @ArrivedDate = '2026-02-01',
+    @ArrivedTime = '14:45';
+
+
+EXEC sp_ListAllFlights;
+
+
+CREATE PROCEDURE sp_GetAirports
+AS
+BEGIN
+    SELECT AirportId, AirportName
+    FROM Airport;
+END
+
+
+CREATE PROCEDURE sp_GetFlightDetails
+AS
+BEGIN
+    SELECT FlightDetailsId, FlightName
+    FROM FlightDetails;
+END
+
+CREATE PROCEDURE sp_GetFlightsSimple
+AS
+BEGIN
+    SELECT FlightId, FlightDetailsId
+    FROM FlightItatory;
+END
+
+SELECT*FROM Airport;
+
+SELECT AirportId, AirportName FROM Airport;
